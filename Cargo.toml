@@ -8,5 +8,6 @@ name = "spiro"
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
+libc = "~0.2"
 tokio-core = "0.1"
 futures = "0.1"

@@ -1,7 +1,10 @@
+extern crate libc;
 extern crate futures;
 #[macro_use]
 extern crate tokio_core;
 
+use libc::c_char;
+use std::ffi::CStr;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::io::{Error, ErrorKind};
 use futures::{Async, Future, Poll};
@@ -70,10 +73,11 @@ impl Client {
 }
 
 #[no_mangle]
-pub extern fn spiro_client_new() -> *mut Client {
-    Box::into_raw(Box::new(Client::new("10.1.10.147").unwrap()))
+pub extern fn spiro_client_new(addr: *const c_char) -> *mut Client {
+    assert!(!addr.is_null());
+    let addr = unsafe { CStr::from_ptr(addr).to_string_lossy().into_owned() };
+    Box::into_raw(Box::new(Client::new(&addr).unwrap()))
 }
-
 
 #[no_mangle]
 pub extern fn spiro_client_send(client: *mut Client, x: f64, y: f64) {
