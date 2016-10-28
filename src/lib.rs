@@ -94,5 +94,5 @@ fn connect_to_server() {
         Err(e) => panic!("{:?}", e)
     };
     client.send_params(1.2, 3.4);
-    client.send_params(100.3, 25.4);
+    client.send_params(-1.3, 1.4);
 }
