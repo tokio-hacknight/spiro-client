@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Paul Faria <Nashenas88@gmail.com>"]
 
 [dependencies]
+tokio-core = "0.1"
