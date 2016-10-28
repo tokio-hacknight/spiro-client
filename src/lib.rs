@@ -69,17 +69,17 @@ impl Client {
     }
 }
 
-// extern "C" fn new_client() -> *mut Client {
-//      let client = Box::new(Client::new("127.0.0.1"));
-//      unsafe {
-//          &mut *client
-//      }
-// }
+#[no_mangle]
+pub extern fn spiro_client_new() -> *mut Client {
+    Box::into_raw(Box::new(Client::new("10.1.10.147").unwrap()))
+}
 
-pub extern "C" fn send_params(client: *mut Client, x: f64, y: f64) {
-    unsafe {
-        let _ = (*client).send_params(x, y);
-    }
+
+#[no_mangle]
+pub extern fn spiro_client_send(client: *mut Client, x: f64, y: f64) {
+    assert!(!client.is_null());
+    let client = unsafe { &mut *client };
+    client.send_params(x, y);
 }
 
 #[test]

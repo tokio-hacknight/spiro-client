@@ -3,6 +3,10 @@ name = "spiro-client"
 version = "0.1.0"
 authors = ["Paul Faria <Nashenas88@gmail.com>"]
 
+[lib]
+name = "spiro"
+crate-type = ["staticlib", "rlib"]
+
 [dependencies]
 tokio-core = "0.1"
 futures = "0.1"
