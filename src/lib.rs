@@ -52,7 +52,7 @@ impl Client {
         let server_port: u16 = 26262;
         let core = try!(Core::new());
         let handle = core.handle();
-        let local_socket_addr = try!(("127.0.0.1", local_port).to_socket_addrs()).next().unwrap(); // TODO check unwrap()
+        let local_socket_addr = try!(("0.0.0.0", local_port).to_socket_addrs()).next().unwrap(); // TODO check unwrap()
         let server_socket_addr = try!((socket_addr, server_port).to_socket_addrs()).next().unwrap(); // TODO check unwrap()
         let socket = UdpSocket::bind(&local_socket_addr, &handle).unwrap(); // TODO check unwrap
         let writer = Writer {
