@@ -38,6 +38,7 @@ impl Future for Writer {
                         }
                     }
                     *some_buffer = None;
+                    return Ok(Async::Ready(()));
                 },
                 _ => return Ok(Async::NotReady),
             }
@@ -68,7 +69,7 @@ impl Client {
     pub fn send_params(&mut self, x: f64, y: f64) {
         let data = format!("{}\t{}", x, y);
         self.writer.buffer = Some(data);
-        self.core.run(&mut self.writer).unwrap();
+        self.core.run(&mut self.writer).unwrap(); // unwrap is to prevent warning, should probably fix this
     }
 }
 
@@ -93,4 +94,5 @@ fn connect_to_server() {
         Err(e) => panic!("{:?}", e)
     };
     client.send_params(1.2, 3.4);
+    client.send_params(100.3, 25.4);
 }
