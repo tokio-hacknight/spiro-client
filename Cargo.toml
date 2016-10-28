@@ -5,3 +5,4 @@ authors = ["Paul Faria <Nashenas88@gmail.com>"]
 
 [dependencies]
 tokio-core = "0.1"
+futures = "0.1"

@@ -1,28 +1,71 @@
+extern crate futures;
+#[macro_use]
 extern crate tokio_core;
 
 use std::net::{SocketAddr, ToSocketAddrs};
+use std::io::{Error, ErrorKind};
+use futures::{Async, Future, Poll};
 use tokio_core::net::UdpSocket;
 use tokio_core::reactor::Core;
 
+struct Writer {
+    socket: UdpSocket,
+    server_addr: SocketAddr,
+    buffer: Option<String>,
+}
+
 pub struct Client {
     core: Core,
-    socket: UdpSocket,
-    socket_addr: SocketAddr,
+    writer: Writer,
+}
+
+impl Future for Writer {
+    type Item = ();
+    type Error = Error;
+
+    fn poll(&mut self) -> Poll<(), Self::Error> {
+        loop {
+            match (self.socket.poll_write(), &mut self.buffer) {
+                (Async::Ready(_), some_buffer @ &mut Some(_)) => {
+                    {
+                        let buffer_bytes = some_buffer.as_ref().unwrap().as_bytes();
+                        let amt = try_nb!(self.socket.send_to(buffer_bytes, &self.server_addr));
+                        if buffer_bytes.len() != amt {
+                            return Err(Error::new(ErrorKind::Other, "bad write"));
+                        }
+                    }
+                    *some_buffer = None;
+                },
+                _ => return Ok(Async::NotReady),
+            }
+        }
+    }
 }
 
 impl Client {
     pub fn new(socket_addr: &str) -> std::io::Result<Self> {
-        let port: u16 = 26262;
+        let local_port: u16 = 26263;
+        let server_port: u16 = 26262;
         let core = try!(Core::new());
         let handle = core.handle();
-        let socket_addr: SocketAddr = try!((socket_addr, port).to_socket_addrs()).next().unwrap();
-        let socket = UdpSocket::bind(&socket_addr, &handle).unwrap();
-        Ok(Client { core: core, socket: socket, socket_addr: socket_addr })
+        let local_socket_addr = try!(("127.0.0.1", local_port).to_socket_addrs()).next().unwrap(); // TODO check unwrap()
+        let server_socket_addr = try!((socket_addr, server_port).to_socket_addrs()).next().unwrap(); // TODO check unwrap()
+        let socket = UdpSocket::bind(&local_socket_addr, &handle).unwrap(); // TODO check unwrap
+        let writer = Writer {
+            socket: socket,
+            server_addr: server_socket_addr,
+            buffer: None
+        };
+        Ok(Client {
+            core: core,
+            writer: writer
+        })
     }
 
-    pub fn send_params(&mut self, x: f64, y: f64, p1: f64, p2: f64) -> std::io::Result<usize> {
-        let data = format!("{}\t{}\t{}\t{}", x, y, p1, p2);
-        self.socket.send_to(data.as_bytes(), &self.socket_addr)
+    pub fn send_params(&mut self, x: f64, y: f64) {
+        let data = format!("{}\t{}", x, y);
+        self.writer.buffer = Some(data);
+        self.core.run(&mut self.writer).unwrap();
     }
 }
 
@@ -33,8 +76,17 @@ impl Client {
 //      }
 // }
 
-pub extern "C" fn send_params(client: *mut Client, x: f64, y: f64, p1: f64, p2: f64) {
+pub extern "C" fn send_params(client: *mut Client, x: f64, y: f64) {
     unsafe {
-        let _ = (*client).send_params(x, y, p1, p2);
+        let _ = (*client).send_params(x, y);
     }
+}
+
+#[test]
+fn connect_to_server() {
+    let mut client = match Client::new("127.0.0.1") {
+        Ok(client) => client,
+        Err(e) => panic!("{:?}", e)
+    };
+    client.send_params(1.2, 3.4);
 }
